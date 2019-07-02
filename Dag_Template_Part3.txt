@@ -1,0 +1,7 @@
+$DEFNAME$_task = $OPERATORNAME$(
+    task_id='$DEFNAME$',
+    provide_context=True,
+    python_callable=$DEFNAME$,
+    trigger_rule='all_success',
+    dag=dag)
+	

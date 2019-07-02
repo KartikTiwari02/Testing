@@ -1,0 +1,8 @@
+def $DEFNAME$(ds, **kwargs):
+    print(kwargs)
+    logging.info("ds"+ds)
+    $DEFNAME$_script='$COMMAND$'
+    logging.info("command"+$DEFNAME$_script)
+    print $DEFNAME$_script
+    call_sub_process_to_execute_commands($DEFNAME$_script)
+	

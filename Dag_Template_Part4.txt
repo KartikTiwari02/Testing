@@ -1,0 +1,56 @@
+from airflow import DAG
+from airflow.operators.bash_operator import BashOperator
+from airflow.operators.dummy_operator import DummyOperator
+from airflow.operators import PythonOperator
+from airflow.operators import BranchPythonOperator
+from airflow.operators import SimpleHttpOperator, HttpSensor,   BashOperator, EmailOperator, S3KeySensor
+from airflow.models import DAG
+from datetime import datetime,timedelta
+from airflow.contrib.operators.analyticsworkflow_operator import AnalyticsWorkflowOperator
+import os
+import subprocess
+import logging
+import sys
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
+#airflowdag_args#
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime($DAGSTARTDATE$),
+    'email': ['airflow@infosys.com'],
+    'email_on_failure': True,
+    'email_on_retry': True,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+dag = DAG(
+	dag_id='$DAGNAME$', default_args=default_args, schedule_interval='$INTERVSL$')
+
+$DEFNAME$_task = $OPERATORNAME$(
+	project_name="$PROJECT_NAME$",
+        data_set_name="$DATA_SET_NAME$",
+        wrangler_output_path="$WRANGLER_OUTPUT_PATH$",
+        wrangler_output_format="$WRANGLER_OUTPUT_FORMAT$",
+        task_id="$TASK_ID$",
+        command_type="$COMMAND_TYPE$",
+        wrangler_job_type="$WRANGLER_JOB_TYPE$",
+        wrangler_username="$WRANGLER_USERNAME$",
+        wrangler_password="$WRANGLER_PASSWORD$",
+        wrangler_script_path="$WRANGLER_SCRIPT_PATH$",
+        wrangler_data_path="$WRANGLER_DATA_PATH$",
+        wrangler_cli_output_path_job="$WRANGLER_CLI_OUTPUT_PATH_JOB$",
+        dag=dag)
+
+$DEFNAME1$_task = $OPERATORNAME1$(
+        wrangler_hive_database="$WRANGLER_HIVE_DATABASE$",
+        wrangler_hive_persist_table="$WRANGLER_HIVE_PERSIST_TABLE$",
+        wrangler_publish_format="$WRANGLER_PUBLISH_FORMAT$",
+        task_id="$TASK_ID$",
+        command_type="$COMMAND_TYPE$",
+        wrangler_username="$WRANGLER_USERNAME$",
+        wrangler_password="$WRANGLER_PASSWORD$",
+        wrangler_cli_output_path_job="$WRANGLER_CLI_OUTPUT_PATH_JOB$",
+        wrangler_cli_output_path_publish="$WRANGLER_CLI_OUTPUT_PATH_PUBLISH$",
+        dag=dag)
