@@ -1,0 +1,46 @@
+from airflow import DAG
+from airflow.operators.bash_operator import BashOperator
+from airflow.operators import PythonOperator
+from airflow.operators import BranchPythonOperator
+from airflow.operators import SimpleHttpOperator, HttpSensor,   BashOperator, EmailOperator, S3KeySensor
+from datetime import datetime, timedelta
+import os
+import subprocess
+import logging
+import sys
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime($DAGSTARTDATE$),
+    'email': ['BBSRTESTSMTP@chdsmtp.com'],
+    'email_on_failure': True,
+    'email_on_retry': True,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+    # 'queue': 'bash_queue',
+    # 'pool': 'backfill',
+    # 'priority_weight': 10,
+    # 'end_date': datetime(2016, 1, 1),
+}
+ 
+dag = DAG(
+	dag_id='$DAGNAME$', default_args=default_args, schedule_interval='$INTERVSL$')
+ 
+def call_sub_process_to_execute_commands(command_to_exec):
+
+	print (command_to_exec)
+	try:
+		p = subprocess.Popen(command_to_exec, bufsize=64, stdout=subprocess.PIPE, shell=True)           
+		for line in iter(p.stdout.readline, b''):
+			line = line.strip()
+			logging.info(line)
+				
+			p.wait()
+			logging.info("Return Status "+ str(p.returncode))
+			if p.returncode > 0:
+				sys.exit(1);
+			else:
+				p.returncode
+	except:
+	    raise
