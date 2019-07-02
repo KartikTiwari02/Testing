@@ -1,0 +1,86 @@
+//autosys - create shell script to be executed from scheduler
+        public boolean createScriptForScheduling(ArrayList<DataProcessingStep> alStepDetails, String strMetadataScript,
+        		String flowName)  throws IIGBussinessException, IIGException {
+
+        	BufferedWriter bw = null;
+        	boolean bnStatus =false;
+        	File file =null;
+        	try {
+
+        		String filePath= Util.getIigHome() + Util.getSchedulerFile();
+        		//create wrapper script
+        		String fileName = filePath + flowName + ".sh";
+        		logger.debug(" fileName"+fileName); 
+
+        		file = new File(fileName);
+        		bw = new BufferedWriter(new FileWriter(file));
+        		bw.append("#!/bin/sh" + "\n");
+        		bw.append("cfile="+Util.getIigHome()+"'/scripts/config.properties'"+ "\n");  
+        		bw.append(". $cfile"+ "\n");
+        		bw.append("LOGPATH=$logpath"+ "\n");
+        		bw.append("echo \"Wrapper script execution started..\"" + "\n"); 
+        		bw.append("if [ \"$#\" -ne 2 ]; then" + "\n"); 
+        		bw.append("echo \"This script requires two arguements.\"" + "\n");
+        		bw.append("exit 1" + "\n"); 
+        		bw.append("fi" + "\n"); 
+        		bw.append("varDate=$1" + "\n"); 
+        		bw.append("echo $varDate" + "\n"); 
+        		bw.append("batchId=$2" + "\n"); 
+        		bw.append("echo $batchId" + "\n");
+        		bw.append("logfile_path=${LOGPATH}"+flowName+"_${batchId}.log"+ "\n");
+
+        		if(null!=alStepDetails && alStepDetails.size()>0){
+        			int totalSteps = alStepDetails.size();
+        			bw.append("echo \"Metadata extraction started..\"" + "\n\n"); 
+        			bw.append("sh " + strMetadataScript + " " + alStepDetails.get(0).getFlowId() + " " + totalSteps + "\n\n" );
+        			bw.append("echo \"Metadata extraction completed..\"" + "\n\n"); 
+
+        			String command= null;
+        			for(int i=0;i< totalSteps;i++){
+        				if(alStepDetails.get(i).getScriptName().contains("/scripts/RDBMS_to_HIVE.sh")) {
+        					command= "sh " + Util.getIigHome() + alStepDetails.get(i).getScriptName() + " " + alStepDetails.get(i).getFlowId()
+        							+ " " + alStepDetails.get(i).getStepID() + " " + alStepDetails.get(i).getSequence()
+        							+ " " + totalSteps + " " + "$varDate" + " " + "$batchId  > $logfile_path" +  "\n";
+        					
+
+        					bw.append("echo " + alStepDetails.get(i).getScriptName() +  " \"execution started..\"" + "\n"); 
+        					bw.append(command);
+        					bw.append("echo " + alStepDetails.get(i).getScriptName() +  " \"execution completed..\"" + "\n\n"); 
+        				}else {
+        					command= "sh " + Util.getIigHome() + alStepDetails.get(i).getScriptName() + " " + alStepDetails.get(i).getFlowId()
+        							+ " " + alStepDetails.get(i).getStepID() + " " + alStepDetails.get(i).getSequence()
+        							+ " " + totalSteps + " " + "$varDate" + " " + "$batchId > $logfile_path" +"\n";
+
+        					bw.append("echo " + alStepDetails.get(i).getScriptName() +  " \"execution started..\"" + "\n"); 
+        					bw.append(command);
+        					bw.append("echo " + alStepDetails.get(i).getScriptName() +  " \"execution completed..\"" + "\n\n"); 
+        				}
+
+        			}
+        		}
+
+        		bw.append("echo \"Wrapper script execution completed..\"" + "\n"); 
+        		bnStatus = true;
+
+        	} catch (IOException e) {
+        		logger.error("Sorry, something wrong in TemplateDAO class and createScriptForScheduling method", e);
+        		throw new IIGBussinessException("IO Exception",
+        				"something wrong in TemplateDAO class and createScriptForScheduling method",
+        				Status.INTERNAL_SERVER_ERROR);
+        	}catch (Exception e) {
+        		logger.error("Sorry, something wrong in TemplateDAO class and createScriptForScheduling method", e);
+        		throw new IIGBussinessException("Exception",
+        				"something wrong in TemplateDAO class and createScriptForScheduling method",
+        				Status.INTERNAL_SERVER_ERROR);
+        	} finally {
+        		if (bw != null) {
+        			try {
+        				bw.close();
+        			} catch (Exception e) {
+        				logger.error("Sorry, something wrong in TemplateDAO class and createScriptForScheduling method", e);
+        				throw new IIGException("Error While Closing The file", Status.INTERNAL_SERVER_ERROR);
+        			}
+        		}
+        	}
+        	return bnStatus;
+        }
