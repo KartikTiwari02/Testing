@@ -1,0 +1,72 @@
+//to be added in saveTempRefwithDefNames method	
+if (templateId > 0) {
+				List<DataFlowStepsMappping> executionSteps = dataFlow.getDataFlowStepsMappping();
+				boolean succ = saveExecSteps(executionSteps, templateId);
+				/*if (succ) {
+					tempName = dataFlow.getFlowName();
+				}*/
+				logger.debug("templateId:"+templateId); 
+				//added for autosys
+				String strMetadataScript = getMetadataExtractionStep();
+				logger.debug("strMetadataScript:"+strMetadataScript); 
+				ArrayList<DataProcessingStep> arrayListFlowDetails = getStepsDetailsForExecution(dataFlow.getFlowName());
+
+				boolean bnStatus = createScriptForScheduling(arrayListFlowDetails, strMetadataScript ,dataFlow.getFlowName()); 
+				logger.debug("bnStatus:"+bnStatus); 
+				if(succ && bnStatus){
+					tempName = dataFlow.getFlowName();	
+				}
+				
+			}
+
+//autosys - get the backend steps and scripts to be executed
+				public ArrayList<DataProcessingStep> getStepsDetailsForExecution(String flowName) throws IIGBussinessException, IIGException {
+
+					ResultSet rs = null;
+					Connection connection = null;
+					ArrayList<DataProcessingStep> arrayListFlowDetails = new ArrayList<DataProcessingStep>();
+					DataProcessingStep dataProcessingSteps = null;
+
+					try {
+						connection = JdbcMySQLConnection.getConnection();
+						PreparedStatement statement = connection.prepareStatement("select flow.FLOW_ID,flow.STEP_ID,dps.STEP_NAME, dpt.SCRIPT_NAME,flow.SEQUENCE,df.FLOW_NAME,"
+								+ "flow.SUCCESSOR,dps.SUBJECT_AREA from DATA_PROCESSING_TEMPLATE dpt, DATA_PROCESSING_STEPS dps, DATA_FLOW_STEPS_MAPPING flow,"
+								+ "DATA_FLOW df where dpt.DP_TEMPLATE_ID = dps.DP_TEMPLATE_ID and flow.STEP_ID = dps.STEP_ID and "
+								+ "flow.FLOW_ID=df.FLOW_ID and df.FLOW_NAME = ? ORDER BY flow.SEQUENCE");
+						statement.setString(1, flowName);
+						rs = statement.executeQuery();
+
+						while (rs.next()) {
+							dataProcessingSteps = new DataProcessingStep();
+							dataProcessingSteps.setFlowId(rs.getInt("FLOW_ID"));
+							dataProcessingSteps.setStepID(rs.getInt("STEP_ID"));
+							dataProcessingSteps.setStepName(rs.getString("STEP_NAME"));
+							dataProcessingSteps.setScriptName(rs.getString("SCRIPT_NAME"));
+							dataProcessingSteps.setSequence(rs.getString("SEQUENCE"));
+							dataProcessingSteps.setSuccessorStep(rs.getString("SUCCESSOR"));
+							dataProcessingSteps.setSubArea(rs.getString("SUBJECT_AREA"));
+							arrayListFlowDetails.add(dataProcessingSteps);
+						}
+
+					} catch (SQLException e) {
+						logger.error("Sorry, something wrong in TemplateDAO class and getStepsDetailsForExecution method", e);
+						throw new IIGBussinessException("SQL Exception",
+								"something wrong in TemplateDAO class and getStepsDetailsForExecution method",
+								Status.INTERNAL_SERVER_ERROR);
+					}catch (Exception e) {
+						logger.error("Sorry, something wrong in TemplateDAO class and getStepsDetailsForExecution method", e);
+						throw new IIGBussinessException("Exception",
+								"something wrong in TemplateDAO class and getStepsDetailsForExecution method",
+								Status.INTERNAL_SERVER_ERROR);
+					} finally {
+						if (connection != null) {
+							try {
+								connection.close();
+							} catch (SQLException e) {
+								logger.error("Sorry, something wrong in TemplateDAO class and getStepsDetailsForExecution method", e);
+								throw new IIGException("Error While Closing The MySQL Connection", Status.INTERNAL_SERVER_ERROR);
+							}
+						}
+					}
+					return arrayListFlowDetails;
+				}
