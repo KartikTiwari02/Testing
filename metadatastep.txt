@@ -1,0 +1,38 @@
+//autosys- get metadata extraction step 
+				public String getMetadataExtractionStep() throws IIGBussinessException, IIGException {
+					ResultSet rs = null;
+					Connection connection = null;
+					String strMetadataScript=null;
+					try {
+						connection = JdbcMySQLConnection.getConnection();
+
+						PreparedStatement statement = connection.prepareStatement("select SCRIPT_NAME from "
+								+ "DATA_PROCESSING_TEMPLATE where DP_TEMPLATE_ID=11 ");
+						rs = statement.executeQuery();
+
+						while (rs.next()) {
+							strMetadataScript=  Util.getIigHome() + rs.getString("SCRIPT_NAME");
+						}
+
+					} catch (SQLException e) {
+						logger.error("Sorry, something wrong in TemplateDAO class and getMetadataExtractionStep method", e);
+						throw new IIGBussinessException("SQL Exception",
+								"something wrong in TemplateDAO class and getMetadataExtractionStep method",
+								Status.INTERNAL_SERVER_ERROR);
+					}catch (Exception e) {
+						logger.error("Sorry, something wrong in TemplateDAO class and getMetadataExtractionStep method", e);
+						throw new IIGBussinessException("Exception",
+								"something wrong in TemplateDAO class and getMetadataExtractionStep method",
+								Status.INTERNAL_SERVER_ERROR);
+					} finally {
+						if (connection != null) {
+							try {
+								connection.close();
+							} catch (SQLException e) {
+								logger.error("Sorry, something wrong in TemplateDAO class and getMetadataExtractionStep method", e);
+								throw new IIGException("Error While Closing The DB Connection", Status.INTERNAL_SERVER_ERROR);
+							}
+						}
+					}
+					return strMetadataScript;
+				}
